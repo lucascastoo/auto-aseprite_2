@@ -35,13 +35,28 @@ jobs:
         with:
           arch: x64
 
+      # 👉 OpenSSL só no runner do GitHub (NÃO no seu PC)
+      - name: Install OpenSSL
+        run: |
+          choco install openssl --yes --no-progress
+
       - name: Build Aseprite
         run: |
           mkdir build
           cd build
-          cmake "${{ github.workspace }}/src/aseprite" -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DLAF_BACKEND=skia -DSKIA_DIR="${{ github.workspace }}/src/skia" -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
+          cmake "${{ github.workspace }}/src/aseprite" -G Ninja ^
+            -DCMAKE_BUILD_TYPE=MinSizeRel ^
+            -DLAF_BACKEND=skia ^
+            -DSKIA_DIR="${{ github.workspace }}/src/skia" ^
+            -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" ^
+            -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
           cmake --build . --config MinSizeRel --target aseprite
-          # copy "C:/Windows/System32/libcrypto-3-x64.dll" ./bin
+
+      # 👉 Copia as DLLs pro Aseprite (build portátil)
+      - name: Copy OpenSSL DLLs
+        run: |
+          copy "C:\Program Files\OpenSSL-Win64\bin\libcrypto-3-x64.dll" build\bin\
+          copy "C:\Program Files\OpenSSL-Win64\bin\libssl-3-x64.dll" build\bin\
 
       - name: Get version
         id: get_version
@@ -51,7 +66,7 @@ jobs:
 
       - name: Zip Aseprite
         run: |
-          cd build/bin
+          cd build\bin
           7z a ../../Aseprite-Windows-x64-${{ steps.get_version.outputs.version }}.zip *
 
       - name: GH Release

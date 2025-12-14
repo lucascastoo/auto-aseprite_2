@@ -48,10 +48,18 @@ jobs:
           cmake --build . --config MinSizeRel --target aseprite
 
       - name: Copy OpenSSL DLLs
+        shell: powershell
         run: |
-          copy "C:\Program Files\OpenSSL-Win64\bin\libcrypto-3-x64.dll" build\bin\
-          copy "C:\Program Files\OpenSSL-Win64\bin\libssl-3-x64.dll" build\bin\
+          $openssl = Get-ChildItem -Path "C:\" -Recurse -Filter libcrypto-3-x64.dll -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $openssl) {
+            Write-Error "libcrypto-3-x64.dll not found"
+            exit 1
+          }
 
+          $binDir = Split-Path $openssl.FullName
+          Copy-Item "$binDir\libcrypto-3-x64.dll" build\bin\
+          Copy-Item "$binDir\libssl-3-x64.dll" build\bin\
+      
       - name: Get version
         id: get_version
         run: |
